@@ -1,7 +1,18 @@
+import os
+
 from fastapi import FastAPI, HTTPException
 from .schemas import PredictRequest, PredictResponse
+from .model import SentimentModel
 
 app = FastAPI(title="ds-service", version="0.1.0")
+
+MODEL_PATH = os.getenv("MODEL_PATH", "models/sentiment.joblib")
+model = SentimentModel(model_path=MODEL_PATH)
+
+
+@app.on_event("startup")
+def on_startup() -> None:
+    model.load()
 
 
 @app.get("/health")
@@ -15,10 +26,5 @@ def predict(req: PredictRequest):
     if len(text) < 3:
         raise HTTPException(status_code=400, detail="Campo 'text' deve ter pelo menos 3 caracteres.")
 
-    lowered = text.lower()
-    negative_markers = ["ruim", "péssim", "horr", "defeito", "demor", "atras", "não recomendo"]
-
-    if any(m in lowered for m in negative_markers):
-        return PredictResponse(label="Negativo", probability=0.85)
-
-    return PredictResponse(label="Positivo", probability=0.75)
+    result = model.predict(text)
+    return PredictResponse(label=result.label, probability=result.probability)
