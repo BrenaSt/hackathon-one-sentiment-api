@@ -1,6 +1,6 @@
 import os
 from dataclasses import dataclass
-from typing import Optional, Tuple
+from typing import Optional
 
 import joblib
 
@@ -13,34 +13,30 @@ class ModelResult:
 
 class SentimentModel:
     """
-    Wrapper do modelo/pipeline do scikit-learn.
-    - Se existir um arquivo joblib, carrega.
-    - Se não existir, usa um fallback simples (para destravar integração do BE).
+    Wrapper do pipeline de ML (scikit-learn).
+    - Carrega um arquivo .joblib se existir.
+    - Se não existir, usa fallback heurístico para não bloquear a integração.
     """
 
     def __init__(self, model_path: str):
         self.model_path = model_path
-        self.pipeline = None
+        self.pipeline: Optional[object] = None
 
     def load(self) -> None:
         if os.path.exists(self.model_path):
             self.pipeline = joblib.load(self.model_path)
         else:
-            self.pipeline = None  # fallback
+            self.pipeline = None
 
     def predict(self, text: str) -> ModelResult:
         if self.pipeline is None:
-            # Fallback simples: útil para testar a API e a integração antes do modelo real.
             lowered = text.lower()
             negative_markers = ["ruim", "péssim", "horr", "defeito", "demor", "atras", "não recomendo"]
             if any(m in lowered for m in negative_markers):
                 return ModelResult(label="Negativo", probability=0.85)
             return ModelResult(label="Positivo", probability=0.75)
 
-        # Pipeline do scikit-learn: espera lista de textos
         proba = self.pipeline.predict_proba([text])[0]
         classes = list(self.pipeline.classes_)
         best_idx = int(proba.argmax())
-        label = str(classes[best_idx])
-        probability = float(proba[best_idx])
-        return ModelResult(label=label, probability=probability)
+        return ModelResult(label=str(classes[best_idx]), probability=float(proba[best_idx]))
