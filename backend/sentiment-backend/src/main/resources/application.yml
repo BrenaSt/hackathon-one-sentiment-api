@@ -1,5 +1,88 @@
+# Configuração principal do Sentiment Backend API
 server:
   port: 8080
 
+spring:
+  application:
+    name: sentiment-backend
+
+  # Profile padrão: dev (H2 em memória)
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+  # Configuração JPA comum
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+
+# Configuração do serviço de Data Science
 ds:
-  base-url: http://localhost:8000
+  base-url: ${DS_SERVICE_URL:http://localhost:8000}
+
+# Actuator endpoints para health checks
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+# Logging
+logging:
+  level:
+    br.com.hackathonone: DEBUG
+    org.springframework.web: INFO
+    org.hibernate.SQL: DEBUG
+
+---
+# Profile: dev (desenvolvimento local com H2)
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+  datasource:
+    url: jdbc:h2:mem:sentimentdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+
+---
+# Profile: prod (produção com PostgreSQL na OCI)
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/sentimentdb}
+    username: ${DATABASE_USER:sentiment_user}
+    password: ${DATABASE_PASSWORD:sentiment_pass}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+logging:
+  level:
+    br.com.hackathonone: INFO
+    org.springframework.web: WARN
+    org.hibernate.SQL: WARN

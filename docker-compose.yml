@@ -1,0 +1,93 @@
+version: '3.8'
+
+services:
+  # Banco de dados PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: sentiment-postgres
+    environment:
+      POSTGRES_DB: sentimentdb
+      POSTGRES_USER: sentiment_user
+      POSTGRES_PASSWORD: sentiment_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./ddl/schema-postgres.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sentiment_user -d sentimentdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sentiment-network
+    restart: unless-stopped
+
+  # Serviço de Data Science (FastAPI + ML)
+  ds-service:
+    build:
+      context: ./ds-service
+      dockerfile: Dockerfile
+    container_name: sentiment-ds
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - sentiment-network
+    restart: unless-stopped
+
+  # Backend Spring Boot
+  backend:
+    build:
+      context: ./backend/sentiment-backend
+      dockerfile: Dockerfile
+    container_name: sentiment-backend
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DS_SERVICE_URL: http://ds-service:8000
+      DATABASE_URL: jdbc:postgresql://postgres:5432/sentimentdb
+      DATABASE_USER: sentiment_user
+      DATABASE_PASSWORD: sentiment_pass
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ds-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - sentiment-network
+    restart: unless-stopped
+
+  # Frontend Web (Nginx)
+  frontend:
+    image: nginx:alpine
+    container_name: sentiment-frontend
+    volumes:
+      - ./frontend/web:/usr/share/nginx/html:ro
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - sentiment-network
+    restart: unless-stopped
+
+networks:
+  sentiment-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
