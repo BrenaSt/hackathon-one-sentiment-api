@@ -1,0 +1,30 @@
+# Configuração para ambiente de produção (OCI)
+spring:
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://postgres:5432/sentimentdb}
+    username: ${DATABASE_USER:sentiment_user}
+    password: ${DATABASE_PASSWORD:sentiment_pass}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 300000
+      connection-timeout: 20000
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+
+# DS Service via Docker network
+ds:
+  service:
+    url: ${DS_SERVICE_URL:http://ds-service:8000}
+
+# Logging em produção
+logging:
+  level:
+    com.sentimentapi: INFO
+    org.springframework.web: WARN
+    org.hibernate.SQL: WARN

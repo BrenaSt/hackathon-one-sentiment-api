@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentiment API - Análise de Sentimentos</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            resize: vertical;
+            min-height: 120px;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .result.positivo {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+        }
+
+        .result.negativo {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+        }
+
+        .result.neutro {
+            background: #fff3cd;
+            border: 1px solid #ffeeba;
+        }
+
+        .result h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+
+        .result .probability {
+            font-size: 1.1rem;
+            color: #666;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .stat-item .number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-item .label {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .examples {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        .example-btn {
+            background: #f0f0f0;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: background 0.2s;
+        }
+
+        .example-btn:hover {
+            background: #e0e0e0;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .api-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+        }
+
+        .api-info code {
+            display: block;
+            margin: 5px 0;
+        }
+
+        footer {
+            text-align: center;
+            color: white;
+            margin-top: 30px;
+            opacity: 0.8;
+        }
+
+        footer a {
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎯 Sentiment API</h1>
+            <p>Análise de Sentimentos com Machine Learning - Hackathon One</p>
+        </header>
+
+        <!-- Análise de Sentimento -->
+        <div class="card">
+            <h2>📝 Analisar Sentimento</h2>
+            <div class="form-group">
+                <label for="texto">Digite ou cole um texto para análise:</label>
+                <textarea id="texto" placeholder="Ex: Este produto é excelente! Recomendo a todos."></textarea>
+            </div>
+            <div class="examples">
+                <span style="color: #666; font-size: 0.9rem;">Exemplos:</span>
+                <button class="example-btn" onclick="setExample('positivo')">😊 Positivo</button>
+                <button class="example-btn" onclick="setExample('negativo')">😠 Negativo</button>
+                <button class="example-btn" onclick="setExample('neutro')">😐 Neutro</button>
+            </div>
+            <br>
+            <button class="btn" onclick="analisar()">Analisar Sentimento</button>
+            
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Analisando...</p>
+            </div>
+            
+            <div class="result" id="resultado">
+                <h3 id="previsao"></h3>
+                <p class="probability" id="probabilidade"></p>
+            </div>
+        </div>
+
+        <!-- Estatísticas -->
+        <div class="card">
+            <h2>📊 Estatísticas</h2>
+            <button class="btn" onclick="carregarStats()" style="margin-bottom: 20px;">Atualizar Estatísticas</button>
+            <div class="stats-grid" id="stats">
+                <div class="stat-item">
+                    <div class="number" id="total">-</div>
+                    <div class="label">Total de Análises</div>
+                </div>
+                <div class="stat-item">
+                    <div class="number" id="positivos" style="color: #28a745;">-</div>
+                    <div class="label">Positivos</div>
+                </div>
+                <div class="stat-item">
+                    <div class="number" id="negativos" style="color: #dc3545;">-</div>
+                    <div class="label">Negativos</div>
+                </div>
+                <div class="stat-item">
+                    <div class="number" id="neutros" style="color: #ffc107;">-</div>
+                    <div class="label">Neutros</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Informações da API -->
+        <div class="card">
+            <h2>🔌 API Endpoints</h2>
+            <div class="api-info">
+                <code><strong>POST</strong> /api/v1/sentiment</code>
+                <code>Body: { "text": "Seu texto aqui" }</code>
+                <code>Response: { "previsao": "Positivo", "probabilidade": 0.92 }</code>
+                <br>
+                <code><strong>POST</strong> /api/v1/sentiment/batch</code>
+                <code>Body: { "texts": [{"text": "Texto 1"}, {"text": "Texto 2"}] }</code>
+                <br>
+                <code><strong>GET</strong> /api/v1/stats</code>
+                <br>
+                <code><strong>GET</strong> /api/v1/health</code>
+            </div>
+            <br>
+            <p style="color: #666; font-size: 0.9rem;">
+                📚 Documentação completa: <a href="/swagger-ui.html" target="_blank">Swagger UI</a>
+            </p>
+        </div>
+
+        <footer>
+            <p>Hackathon One - Sentiment API | 
+               <a href="/swagger-ui.html">Swagger</a> | 
+               <a href="/actuator/health">Health Check</a>
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        const API_BASE = '';
+
+        const exemplos = {
+            positivo: "Atendimento excelente, resolveu meu problema rapidamente! Recomendo a todos.",
+            negativo: "Demorou muito e veio com defeito. Péssima experiência, não comprem!",
+            neutro: "Recebi o produto. Ainda vou testar melhor para dar uma opinião."
+        };
+
+        function setExample(tipo) {
+            document.getElementById('texto').value = exemplos[tipo];
+        }
+
+        async function analisar() {
+            const texto = document.getElementById('texto').value.trim();
+            if (!texto) {
+                alert('Por favor, digite um texto para análise.');
+                return;
+            }
+
+            const loading = document.getElementById('loading');
+            const resultado = document.getElementById('resultado');
+            
+            loading.style.display = 'block';
+            resultado.style.display = 'none';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/sentiment`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ text: texto })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Erro na análise');
+                }
+
+                const data = await response.json();
+                
+                // Exibir resultado
+                const previsaoEl = document.getElementById('previsao');
+                const probEl = document.getElementById('probabilidade');
+                
+                const emoji = data.previsao === 'Positivo' ? '😊' : 
+                              data.previsao === 'Negativo' ? '😠' : '😐';
+                
+                previsaoEl.textContent = `${emoji} ${data.previsao}`;
+                probEl.textContent = `Probabilidade: ${(data.probabilidade * 100).toFixed(1)}%`;
+                
+                resultado.className = 'result ' + data.previsao.toLowerCase();
+                resultado.style.display = 'block';
+
+                // Atualizar estatísticas
+                carregarStats();
+
+            } catch (error) {
+                alert('Erro ao analisar: ' + error.message);
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        async function carregarStats() {
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/stats`);
+                const data = await response.json();
+
+                document.getElementById('total').textContent = data.total_analises || 0;
+                document.getElementById('positivos').textContent = data.positivos || 0;
+                document.getElementById('negativos').textContent = data.negativos || 0;
+                document.getElementById('neutros').textContent = data.neutros || 0;
+
+            } catch (error) {
+                console.error('Erro ao carregar estatísticas:', error);
+            }
+        }
+
+        // Carregar estatísticas ao iniciar
+        carregarStats();
+
+        // Permitir envio com Enter (Ctrl+Enter para nova linha)
+        document.getElementById('texto').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey) {
+                e.preventDefault();
+                analisar();
+            }
+        });
+    </script>
+</body>
+</html>
