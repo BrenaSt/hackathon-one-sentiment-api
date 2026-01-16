@@ -127,6 +127,6 @@ Dessa forma, a etapa de Data Science fica **desacoplada do backend**, permitindo
 
 ---
 
-📍 **Projeto desenvolvido para fins educacionais e demonstrativos durante o Hackathon.**
+📍 **Projeto desenvolvido para fins educacionais e demonstrativos durante o Hackathon ONE (Oracle Next Education).**
 
 ---
