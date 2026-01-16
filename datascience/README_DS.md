@@ -130,11 +130,3 @@ Dessa forma, a etapa de Data Science fica **desacoplada do backend**, permitindo
 📍 **Projeto desenvolvido para fins educacionais e demonstrativos durante o Hackathon.**
 
 ---
-
-Se quiser, posso:
-
-* Criar um README **mais curto**
-* Adaptar o texto para **inglês**
-* Ou alinhar com o README geral do projeto
-
-É só me dizer 😊
